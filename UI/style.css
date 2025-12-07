@@ -154,6 +154,20 @@ button.remove-button:hover {
     background-color: var(--primary-color-hover);
 }
 
+/* Barra di Ricerca */
+.search-container {
+    margin-bottom: 2rem;
+}
+
+#search-bar {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-sizing: border-box; /* Assicura che padding non alteri la larghezza totale */
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     table, thead, tbody, th, td, tr {

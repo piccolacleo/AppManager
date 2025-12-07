@@ -13,6 +13,10 @@
     </header>
 
     <main>
+        <div class="search-container">
+            <input type="text" id="search-bar" placeholder="Cerca applicazione...">
+        </div>
+
         {# Ciclo principale che itera sulle cartelle (chiavi del dizionario) #}
         {% for folder_name, apps_in_folder in apps_by_folder.items()|sort %}
             <section class="folder-section">
@@ -27,7 +31,7 @@
                     <tbody>
                         {# Ciclo secondario che itera sulle app all'interno di una cartella #}
                         {% for app in apps_in_folder %}
-                        <tr>
+                        <tr class="app-row">
                             <td data-label="Applicazione">{{ app.name }}</td>
                             <td data-label="Account Associati">
                                 {% if app.accounts %}
@@ -72,6 +76,41 @@
             <p>Nessuna applicazione trovata nel database.</p>
         {% endfor %}
     </main>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchBar = document.getElementById('search-bar');
+        const folderSections = document.querySelectorAll('.folder-section');
+
+        searchBar.addEventListener('input', function () {
+            const searchTerm = searchBar.value.toLowerCase();
+
+            folderSections.forEach(function(folder) {
+                const appRows = folder.querySelectorAll('tbody .app-row');
+                let visibleAppsInFolder = 0;
+
+                appRows.forEach(function(row) {
+                    // Assicurati di prendere il testo dalla prima cella 'td'
+                    const appName = row.querySelector('td[data-label="Applicazione"]').textContent.toLowerCase();
+                    
+                    if (appName.includes(searchTerm)) {
+                        row.style.display = ''; // Mostra la riga
+                        visibleAppsInFolder++;
+                    } else {
+                        row.style.display = 'none'; // Nascondi la riga
+                    }
+                });
+
+                // Se non ci sono app visibili nella cartella, nascondi l'intera sezione
+                if (visibleAppsInFolder > 0) {
+                    folder.style.display = '';
+                } else {
+                    folder.style.display = 'none';
+                }
+            });
+        });
+    });
+    </script>
 
 </body>
 </html>

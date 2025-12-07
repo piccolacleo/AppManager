@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Dati - Gestione Account App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <header>
+        <h1>Gestione Dati</h1>
+        <nav>
+            <a href="{{ url_for('index') }}">&larr; Torna alla lista App</a>
+        </nav>
+    </header>
+
+    <main>
+        <section id="manage-accounts">
+            <h2>Gestione Account</h2>
+            
+            <!-- Form per aggiungere un nuovo account -->
+            <div class="management-form">
+                <h3>Aggiungi Nuovo Account</h3>
+                <form action="{{ url_for('add_new_account') }}" method="POST">
+                    <input type="text" name="name" placeholder="Nome account (es. a.rossi@email.com)" required>
+                    <input type="text" name="abbreviation" placeholder="Abbreviazione (opzionale)">
+                    <button type="submit">Aggiungi Account</button>
+                </form>
+            </div>
+
+            <!-- Lista degli account esistenti -->
+            <div class="management-list">
+                <h3>Account Esistenti</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Abbreviazione</th>
+                            <th>Azione</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for account in all_accounts %}
+                        <tr>
+                            <td data-label="Nome">{{ account.name }}</td>
+                            <td data-label="Abbreviazione">{{ account.abbreviation or '' }}</td>
+                            <td data-label="Azione">
+                                <form action="{{ url_for('delete_account', account_id=account.id) }}" method="POST" onsubmit="return confirm('Sei sicuro di voler eliminare questo account? Verrà rimosso da tutte le app associate.');">
+                                    <button type="submit" class="remove-button">Elimina</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Sezione Gestione App (verrà implementata in seguito) -->
+        <section id="manage-apps">
+            <h2>Gestione Applicazioni</h2>
+            <p><i>(Funzionalità in arrivo)</i></p>
+        </section>
+    </main>
+
+</body>
+</html>

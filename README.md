@@ -68,9 +68,9 @@ Questa checklist traccia lo stato di avanzamento del progetto.
 
 ### Fase 3: Miglioramenti e Funzionalità Future
 - [x] **3.1.** **Styling:** Migliorare `UI/style.css` per rendere l'interfaccia più pulita e responsiva.
-- [ ] **3.2.** **Ricerca/Filtro:** Aggiungere una barra di ricerca per filtrare le app.
+- [x] **3.2.** **Ricerca/Filtro:** Aggiungere una barra di ricerca per filtrare le app.
 - [ ] **3.3.** **Gestione App/Account:** Aggiungere funzionalità per creare/modificare app e account dall'interfaccia.
-- [ ] **3.4.** **Deployment Online:** Documentare i passaggi per la pubblicazione online.
+- [x] **3.4.** **Deployment Online:** Documentare i passaggi per la pubblicazione online. (Vedi `MANUALE_DEPLOYMENT.md`)
 
 ## 5. Manuale Operativo per l'IA
 
