@@ -99,6 +99,14 @@ class MainLayout(BoxLayout):
         btn_add_app.bind(on_press=self.add_app_popup)
         self.add_widget(btn_add_app)
 
+        btn_edit_app = Button(text="Modifica App")
+        btn_edit_app.bind(on_press=self.edit_app_popup)
+        self.add_widget(btn_edit_app)
+
+        btn_delete_app = Button(text="Elimina App")
+        btn_delete_app.bind(on_press=self.delete_app_popup)
+        self.add_widget(btn_delete_app)
+
         btn_list_app = Button(text="Lista App")
         btn_list_app.bind(on_press=self.show_apps)
         self.add_widget(btn_list_app)
@@ -107,6 +115,14 @@ class MainLayout(BoxLayout):
         btn_add_utenza = Button(text="Aggiungi Utenza")
         btn_add_utenza.bind(on_press=self.add_utenza_popup)
         self.add_widget(btn_add_utenza)
+
+        btn_edit_utenza = Button(text="Modifica Utenza")
+        btn_edit_utenza.bind(on_press=self.edit_utenza_popup)
+        self.add_widget(btn_edit_utenza)
+
+        btn_delete_utenza = Button(text="Elimina Utenza")
+        btn_delete_utenza.bind(on_press=self.delete_utenza_popup)
+        self.add_widget(btn_delete_utenza)
 
         btn_list_utenze = Button(text="Lista Utenze")
         btn_list_utenze.bind(on_press=self.show_utenze)
@@ -135,6 +151,41 @@ class MainLayout(BoxLayout):
         popup = Popup(title="Aggiungi App", content=layout, size_hint=(0.8, 0.8))
         popup.open()
 
+    # Popup per modificare App
+    def edit_app_popup(self, instance):
+        layout = BoxLayout(orientation='vertical')
+        id_input = TextInput(hint_text="ID App")
+        nome_input = TextInput(hint_text="Nuovo Nome")
+        descr_input = TextInput(hint_text="Nuova Descrizione")
+        for w in [id_input, nome_input, descr_input]:
+            layout.add_widget(w)
+        btn_save = Button(text="Modifica")
+
+        def edit_app(btn):
+            self.db.modifica_app(int(id_input.text), nome_input.text, descr_input.text)
+            popup.dismiss()
+
+        btn_save.bind(on_press=edit_app)
+        layout.add_widget(btn_save)
+        popup = Popup(title="Modifica App", content=layout, size_hint=(0.8, 0.8))
+        popup.open()
+
+    # Popup per eliminare App
+    def delete_app_popup(self, instance):
+        layout = BoxLayout(orientation='vertical')
+        id_input = TextInput(hint_text="ID App da eliminare")
+        layout.add_widget(id_input)
+        btn_delete = Button(text="Elimina")
+
+        def delete_app(btn):
+            self.db.elimina_app(int(id_input.text))
+            popup.dismiss()
+
+        btn_delete.bind(on_press=delete_app)
+        layout.add_widget(btn_delete)
+        popup = Popup(title="Elimina App", content=layout, size_hint=(0.8, 0.8))
+        popup.open()
+
     # Popup per aggiungere Utenza
     def add_utenza_popup(self, instance):
         layout = BoxLayout(orientation='vertical')
@@ -156,17 +207,53 @@ class MainLayout(BoxLayout):
         popup = Popup(title="Aggiungi Utenza", content=layout, size_hint=(0.8, 0.8))
         popup.open()
 
+    # Popup per modificare Utenza
+    def edit_utenza_popup(self, instance):
+        layout = BoxLayout(orientation='vertical')
+        id_input = TextInput(hint_text="ID Utenza")
+        indirizzo = TextInput(hint_text="Nuovo Indirizzo")
+        gruppo = TextInput(hint_text="Nuovo Gruppo")
+        uso = TextInput(hint_text="Nuovo Uso")
+        cliente = TextInput(hint_text="Nuovo Cliente")
+        ordine = TextInput(hint_text="Nuovo Ordine")
+        for w in [id_input, indirizzo, gruppo, uso, cliente, ordine]:
+            layout.add_widget(w)
+        btn_save = Button(text="Modifica")
+
+        def edit_utenza(btn):
+            self.db.modifica_utenza(int(id_input.text), indirizzo.text, gruppo.text, uso.text, cliente.text, int(ordine.text))
+            popup.dismiss()
+
+        btn_save.bind(on_press=edit_utenza)
+        layout.add_widget(btn_save)
+        popup = Popup(title="Modifica Utenza", content=layout, size_hint=(0.8, 0.8))
+        popup.open()
+
+    # Popup per eliminare Utenza
+    def delete_utenza_popup(self, instance):
+        layout = BoxLayout(orientation='vertical')
+        id_input = TextInput(hint_text="ID Utenza da eliminare")
+        layout.add_widget(id_input)
+        btn_delete = Button(text="Elimina")
+
+        def delete_utenza(btn):
+            self.db.elimina_utenza(int(id_input.text))
+            popup.dismiss()
+
+        btn_delete.bind(on_press=delete_utenza)
+        layout.add_widget(btn_delete)
+        popup = Popup(title="Elimina Utenza", content=layout, size_hint=(0.8, 0.8))
+        popup.open()
+
     def show_apps(self, instance):
         apps = self.db.lista_app()
-        content = "
-".join([f"{a[0]} - {a[1]}" for a in apps])
+        content = "".join([f"{a[0]} - {a[1]}" for a in apps])
         popup = Popup(title="Lista App", content=Label(text=content or "Nessuna App"), size_hint=(0.8, 0.8))
         popup.open()
 
     def show_utenze(self, instance):
         utenze = self.db.lista_utenze()
-        content = "
-".join([f"{u[0]} - {u[1]}" for u in utenze])
+        content = "".join([f"{u[0]} - {u[1]}" for u in utenze])
         popup = Popup(title="Lista Utenze", content=Label(text=content or "Nessuna Utenza"), size_hint=(0.8, 0.8))
         popup.open()
 

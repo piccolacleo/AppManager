@@ -11,8 +11,8 @@
     <header>
         <h1>Gestione Dati</h1>
         <nav>
-            <a href="apps.html">&larr; Torna alla Lista App</a>
-            <a href="#">Login</a>
+            <a href="index.html">Home</a>
+            <a href="apps.html">&larr; Gestione App</a>
         </nav>
     </header>
 
@@ -23,9 +23,9 @@
             <!-- Form per aggiungere un nuovo account -->
             <div class="management-form">
                 <h3>Aggiungi Nuovo Account</h3>
-                <form action="{{ url_for('add_new_account') }}" method="POST">
-                    <input type="text" name="name" placeholder="Nome account (es. a.rossi@email.com)" required>
-                    <input type="text" name="abbreviation" placeholder="Abbreviazione (opzionale)">
+                <form id="add-account-form">
+                    <input type="text" name="accountName" placeholder="Nome account (es. a.rossi@email.com)" required>
+                    <input type="text" name="accountAbbreviation" placeholder="Abbreviazione (opzionale)">
                     <button type="submit">Aggiungi Account</button>
                 </form>
             </div>
@@ -43,30 +43,8 @@
                             <th>Azione</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for account in all_accounts %}
-                        <tr>
-                            <td data-label="Nome">{{ account.name }}</td>
-                            <td data-label="Abbreviazione">{{ account.abbreviation or '' }}</td>
-                            <td data-label="Ordine">
-                                <form action="{{ url_for('update_account_settings') }}" method="POST" onchange="this.submit()">
-                                    <input type="hidden" name="id" value="{{ account.id }}">
-                                    <input type="number" name="order" value="{{ account.order }}" class="order-input">
-                                </form>
-                            </td>
-                            <td data-label="Nascosto">
-                                <form action="{{ url_for('update_account_settings') }}" method="POST" onchange="this.submit()">
-                                    <input type="hidden" name="id" value="{{ account.id }}">
-                                    <input type="checkbox" name="is_hidden" {% if account.is_hidden %}checked{% endif %}>
-                                </form>
-                            </td>
-                            <td data-label="Azione">
-                                <form action="{{ url_for('delete_account', account_id=account.id) }}" method="POST" onsubmit="return confirm('Sei sicuro di voler eliminare questo account? Verrà rimosso da tutte le app associate.');">
-                                    <button type="submit" class="remove-button">Elimina</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% endfor %}
+                    <tbody id="accounts-list-body">
+                        <!-- Gli account verranno generati qui da JavaScript -->
                     </tbody>
                 </table>
             </div>
@@ -79,9 +57,9 @@
             <!-- Form per aggiungere una nuova app -->
             <div class="management-form">
                 <h3>Aggiungi Nuova Applicazione</h3>
-                <form action="{{ url_for('add_new_app') }}" method="POST">
-                    <input type="text" name="name" placeholder="Nome applicazione" required>
-                    <input type="text" name="folder" placeholder="Cartella" required>
+                <form id="add-app-form">
+                    <input type="text" name="appName" placeholder="Nome applicazione" required>
+                    <input type="text" name="appFolder" placeholder="Cartella" required>
                     <button type="submit">Aggiungi App</button>
                 </form>
             </div>
@@ -99,35 +77,15 @@
                             <th>Azione</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for app in all_apps %}
-                        <tr>
-                            <td data-label="Nome">{{ app.name }}</td>
-                            <td data-label="Cartella">{{ app.folder }}</td>
-                            <td data-label="Ordine">
-                                <form action="{{ url_for('update_app_settings') }}" method="POST" onchange="this.submit()">
-                                    <input type="hidden" name="id" value="{{ app.id }}">
-                                    <input type="number" name="order" value="{{ app.order }}" class="order-input">
-                                </form>
-                            </td>
-                            <td data-label="Nascosta">
-                                <form action="{{ url_for('update_app_settings') }}" method="POST" onchange="this.submit()">
-                                    <input type="hidden" name="id" value="{{ app.id }}">
-                                    <input type="checkbox" name="is_hidden" {% if app.is_hidden %}checked{% endif %}>
-                                </form>
-                            </td>
-                            <td data-label="Azione">
-                                <form action="{{ url_for('delete_app', app_id=app.id) }}" method="POST" onsubmit="return confirm('Sei sicuro di voler eliminare questa applicazione? Verranno rimosse tutte le associazioni con gli account.');">
-                                    <button type="submit" class="remove-button">Elimina</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% endfor %}
+                    <tbody id="apps-list-body">
+                        <!-- Le app verranno generate qui da JavaScript -->
                     </tbody>
                 </table>
             </div>
         </section>
     </main>
 
+    <script src="scripts/dataManager.js"></script>
+    <script src="scripts/accountsPage.js"></script>
 </body>
 </html>
