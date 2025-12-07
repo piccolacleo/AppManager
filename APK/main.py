@@ -4,6 +4,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
+from kivy.uix.textinput import TextInput
 import sqlite3
 import os
 import shutil
@@ -47,26 +48,41 @@ class DBManager:
         self.conn = sqlite3.connect(DB_FILE)
         self.cursor = self.conn.cursor()
 
+    # CRUD App
     def aggiungi_app(self, nome, descrizione):
         self.cursor.execute("INSERT INTO app (nome, descrizione) VALUES (?, ?)", (nome, descrizione))
+        self.conn.commit()
+
+    def modifica_app(self, id_app, nome, descrizione):
+        self.cursor.execute("UPDATE app SET nome=?, descrizione=? WHERE id=?", (nome, descrizione, id_app))
+        self.conn.commit()
+
+    def elimina_app(self, id_app):
+        self.cursor.execute("DELETE FROM app WHERE id=?", (id_app,))
         self.conn.commit()
 
     def lista_app(self):
         self.cursor.execute("SELECT * FROM app")
         return self.cursor.fetchall()
 
+    # CRUD Utenze
     def aggiungi_utenza(self, indirizzo, gruppo, uso, cliente, ordine):
         self.cursor.execute("INSERT INTO utenze (indirizzo, gruppo, uso, cliente, ordine) VALUES (?, ?, ?, ?, ?)",
                             (indirizzo, gruppo, uso, cliente, ordine))
         self.conn.commit()
 
+    def modifica_utenza(self, id_utenza, indirizzo, gruppo, uso, cliente, ordine):
+        self.cursor.execute("UPDATE utenze SET indirizzo=?, gruppo=?, uso=?, cliente=?, ordine=? WHERE id=?",
+                            (indirizzo, gruppo, uso, cliente, ordine, id_utenza))
+        self.conn.commit()
+
+    def elimina_utenza(self, id_utenza):
+        self.cursor.execute("DELETE FROM utenze WHERE id=?", (id_utenza,))
+        self.conn.commit()
+
     def lista_utenze(self):
         self.cursor.execute("SELECT * FROM utenze ORDER BY ordine")
         return self.cursor.fetchall()
-
-    def collega_app_utenza(self, id_app, id_utenza):
-        self.cursor.execute("INSERT OR IGNORE INTO app_utenze (id_app, id_utenza) VALUES (?, ?)", (id_app, id_utenza))
-        self.conn.commit()
 
     def close(self):
         self.conn.close()
@@ -78,27 +94,79 @@ class MainLayout(BoxLayout):
 
         self.add_widget(Label(text="Gestione App e Utenze"))
 
-        btn_app = Button(text="Lista App")
-        btn_app.bind(on_press=self.show_apps)
-        self.add_widget(btn_app)
+        # Pulsanti App
+        btn_add_app = Button(text="Aggiungi App")
+        btn_add_app.bind(on_press=self.add_app_popup)
+        self.add_widget(btn_add_app)
 
-        btn_utenze = Button(text="Lista Utenze")
-        btn_utenze.bind(on_press=self.show_utenze)
-        self.add_widget(btn_utenze)
+        btn_list_app = Button(text="Lista App")
+        btn_list_app.bind(on_press=self.show_apps)
+        self.add_widget(btn_list_app)
 
+        # Pulsanti Utenze
+        btn_add_utenza = Button(text="Aggiungi Utenza")
+        btn_add_utenza.bind(on_press=self.add_utenza_popup)
+        self.add_widget(btn_add_utenza)
+
+        btn_list_utenze = Button(text="Lista Utenze")
+        btn_list_utenze.bind(on_press=self.show_utenze)
+        self.add_widget(btn_list_utenze)
+
+        # Pulsante esportazione DB
         btn_export = Button(text="Esporta DB")
         btn_export.bind(on_press=self.export_db)
         self.add_widget(btn_export)
 
+    # Popup per aggiungere App
+    def add_app_popup(self, instance):
+        layout = BoxLayout(orientation='vertical')
+        nome_input = TextInput(hint_text="Nome App")
+        descr_input = TextInput(hint_text="Descrizione")
+        layout.add_widget(nome_input)
+        layout.add_widget(descr_input)
+        btn_save = Button(text="Salva")
+
+        def save_app(btn):
+            self.db.aggiungi_app(nome_input.text, descr_input.text)
+            popup.dismiss()
+
+        btn_save.bind(on_press=save_app)
+        layout.add_widget(btn_save)
+        popup = Popup(title="Aggiungi App", content=layout, size_hint=(0.8, 0.8))
+        popup.open()
+
+    # Popup per aggiungere Utenza
+    def add_utenza_popup(self, instance):
+        layout = BoxLayout(orientation='vertical')
+        indirizzo = TextInput(hint_text="Indirizzo")
+        gruppo = TextInput(hint_text="Gruppo")
+        uso = TextInput(hint_text="Uso")
+        cliente = TextInput(hint_text="Cliente")
+        ordine = TextInput(hint_text="Ordine (numero)")
+        for w in [indirizzo, gruppo, uso, cliente, ordine]:
+            layout.add_widget(w)
+        btn_save = Button(text="Salva")
+
+        def save_utenza(btn):
+            self.db.aggiungi_utenza(indirizzo.text, gruppo.text, uso.text, cliente.text, int(ordine.text))
+            popup.dismiss()
+
+        btn_save.bind(on_press=save_utenza)
+        layout.add_widget(btn_save)
+        popup = Popup(title="Aggiungi Utenza", content=layout, size_hint=(0.8, 0.8))
+        popup.open()
+
     def show_apps(self, instance):
         apps = self.db.lista_app()
-        content = "\n".join([f"{a[0]} - {a[1]}" for a in apps])
+        content = "
+".join([f"{a[0]} - {a[1]}" for a in apps])
         popup = Popup(title="Lista App", content=Label(text=content or "Nessuna App"), size_hint=(0.8, 0.8))
         popup.open()
 
     def show_utenze(self, instance):
         utenze = self.db.lista_utenze()
-        content = "\n".join([f"{u[0]} - {u[1]}" for u in utenze])
+        content = "
+".join([f"{u[0]} - {u[1]}" for u in utenze])
         popup = Popup(title="Lista Utenze", content=Label(text=content or "Nessuna Utenza"), size_hint=(0.8, 0.8))
         popup.open()
 
