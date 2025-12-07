@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Account App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='utility/style.css') }}">
+</head>
+<body>
+
+    <header>
+        <h1>Gestione Account App</h1>
+        <nav>
+            <a href="{{ url_for('manage') }}">Gestione Dati &rarr;</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="search-container">
+            <input type="text" id="search-bar" placeholder="Cerca applicazione...">
+        </div>
+
+        {# Ciclo principale che itera sulle cartelle (chiavi del dizionario) #}
+        {% for folder_name, apps_in_folder in apps_by_folder.items()|sort %}
+            <section class="folder-section">
+                <h2>{{ folder_name }}</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Applicazione</th>
+                            <th>Account Associati</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {# Ciclo secondario che itera sulle app all'interno di una cartella #}
+                        {% for app in apps_in_folder %}
+                        <tr class="app-row">
+                            <td data-label="Applicazione">{{ app.name }}</td>
+                            <td data-label="Account Associati">
+                                {% if app.accounts %}
+                                    <ul class="account-list">
+                                        {% for account in app.accounts %}
+                                            <li>
+                                                <span>{{ account.name }}</span>
+                                                <form action="{{ url_for('remove_account') }}" method="POST" class="remove-form">
+                                                    <input type="hidden" name="app_id" value="{{ app.id }}">
+                                                    <input type="hidden" name="account_id" value="{{ account.id }}">
+                                                    <button type="submit" class="remove-button">Rimuovi</button>
+                                                </form>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <span class="no-accounts">Nessun account associato</span>
+                                {% endif %}
+
+                                {# Form per aggiungere un nuovo account #}
+                                <div class="add-account-form">
+                                    <form action="{{ url_for('add_account') }}" method="POST">
+                                        <input type="hidden" name="app_id" value="{{ app.id }}">
+                                        <select name="account_id" aria-label="Seleziona un account da aggiungere">
+                                            <option value="">Aggiungi account...</option>
+                                            {# Popola la dropdown con tutti gli account disponibili #}
+                                            {% for account in all_accounts %}
+                                                <option value="{{ account.id }}">{{ account.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <button type="submit">Aggiungi</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+        {% else %}
+            {# Questo blocco viene mostrato se il dizionario apps_by_folder è vuoto #}
+            <p>Nessuna applicazione trovata nel database.</p>
+        {% endfor %}
+    </main>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchBar = document.getElementById('search-bar');
+        const folderSections = document.querySelectorAll('.folder-section');
+
+        searchBar.addEventListener('input', function () {
+            const searchTerm = searchBar.value.toLowerCase();
+
+            folderSections.forEach(function(folder) {
+                const appRows = folder.querySelectorAll('tbody .app-row');
+                let visibleAppsInFolder = 0;
+
+                appRows.forEach(function(row) {
+                    // Assicurati di prendere il testo dalla prima cella 'td'
+                    const appName = row.querySelector('td[data-label="Applicazione"]').textContent.toLowerCase();
+                    
+                    if (appName.includes(searchTerm)) {
+                        row.style.display = ''; // Mostra la riga
+                        visibleAppsInFolder++;
+                    } else {
+                        row.style.display = 'none'; // Nascondi la riga
+                    }
+                });
+
+                // Se non ci sono app visibili nella cartella, nascondi l'intera sezione
+                if (visibleAppsInFolder > 0) {
+                    folder.style.display = '';
+                } else {
+                    folder.style.display = 'none';
+                }
+            });
+        });
+    });
+    </script>
+
+</body>
+</html>
