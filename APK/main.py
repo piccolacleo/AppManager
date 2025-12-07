@@ -6,6 +6,7 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.uix.textinput import TextInput
+from kivy.uix.scrollview import ScrollView
 import sqlite3
 import os
 import shutil
@@ -105,42 +106,56 @@ class MainTabbedPanel(TabbedPanel):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.db = DBManager()
+        self.do_default_tab = False
+        self.tab_height = '40dp'
 
         # Tab App
-        app_tab = BoxLayout(orientation='vertical')
-        app_tab.add_widget(Button(text="Aggiungi App", on_press=self.add_app_popup))
-        app_tab.add_widget(Button(text="Modifica App", on_press=self.edit_app_popup))
-        app_tab.add_widget(Button(text="Elimina App", on_press=self.delete_app_popup))
-        app_tab.add_widget(Button(text="Lista App", on_press=self.show_apps))
-        self.add_widget(app_tab)
-        self.default_tab_text = "App"
+        app_tab = BoxLayout(orientation='vertical', spacing=10, padding=10, size_hint_y=None)
+        app_tab.bind(minimum_height=app_tab.setter('height'))
+        scroll_app = ScrollView(size_hint=(1, 1))
+        scroll_app.add_widget(app_tab)
+        app_tab.add_widget(Button(text="Aggiungi App", size_hint_y=None, height='40dp', on_press=self.add_app_popup))
+        app_tab.add_widget(Button(text="Modifica App", size_hint_y=None, height='40dp', on_press=self.edit_app_popup))
+        app_tab.add_widget(Button(text="Elimina App", size_hint_y=None, height='40dp', on_press=self.delete_app_popup))
+        app_tab.add_widget(Button(text="Lista App", size_hint_y=None, height='40dp', on_press=self.show_apps))
+        self.add_widget(scroll_app)
+        scroll_app.text = "App"
 
         # Tab Utenze
-        utenze_tab = BoxLayout(orientation='vertical')
-        utenze_tab.add_widget(Button(text="Aggiungi Utenza", on_press=self.add_utenza_popup))
-        utenze_tab.add_widget(Button(text="Modifica Utenza", on_press=self.edit_utenza_popup))
-        utenze_tab.add_widget(Button(text="Elimina Utenza", on_press=self.delete_utenza_popup))
-        utenze_tab.add_widget(Button(text="Lista Utenze", on_press=self.show_utenze))
-        self.add_widget(utenze_tab)
-        utenze_tab.text = "Utenze"
+        utenze_tab = BoxLayout(orientation='vertical', spacing=10, padding=10, size_hint_y=None)
+        utenze_tab.bind(minimum_height=utenze_tab.setter('height'))
+        scroll_utenze = ScrollView(size_hint=(1, 1))
+        scroll_utenze.add_widget(utenze_tab)
+        utenze_tab.add_widget(Button(text="Aggiungi Utenza", size_hint_y=None, height='40dp', on_press=self.add_utenza_popup))
+        utenze_tab.add_widget(Button(text="Modifica Utenza", size_hint_y=None, height='40dp', on_press=self.edit_utenza_popup))
+        utenze_tab.add_widget(Button(text="Elimina Utenza", size_hint_y=None, height='40dp', on_press=self.delete_utenza_popup))
+        utenze_tab.add_widget(Button(text="Lista Utenze", size_hint_y=None, height='40dp', on_press=self.show_utenze))
+        self.add_widget(scroll_utenze)
+        scroll_utenze.text = "Utenze"
 
         # Tab Relazioni
-        rel_tab = BoxLayout(orientation='vertical')
-        rel_tab.add_widget(Button(text="Collega App-Utenza", on_press=self.link_relation_popup))
-        rel_tab.add_widget(Button(text="Mostra App per Utenza", on_press=self.show_apps_for_utenza))
-        rel_tab.add_widget(Button(text="Mostra Utenze per App", on_press=self.show_utenze_for_app))
-        self.add_widget(rel_tab)
-        rel_tab.text = "Relazioni"
+        rel_tab = BoxLayout(orientation='vertical', spacing=10, padding=10, size_hint_y=None)
+        rel_tab.bind(minimum_height=rel_tab.setter('height'))
+        scroll_rel = ScrollView(size_hint=(1, 1))
+        scroll_rel.add_widget(rel_tab)
+        rel_tab.add_widget(Button(text="Collega App-Utenza", size_hint_y=None, height='40dp', on_press=self.link_relation_popup))
+        rel_tab.add_widget(Button(text="Mostra App per Utenza", size_hint_y=None, height='40dp', on_press=self.show_apps_for_utenza))
+        rel_tab.add_widget(Button(text="Mostra Utenze per App", size_hint_y=None, height='40dp', on_press=self.show_utenze_for_app))
+        self.add_widget(scroll_rel)
+        scroll_rel.text = "Relazioni"
 
         # Tab Esportazione
-        export_tab = BoxLayout(orientation='vertical')
-        export_tab.add_widget(Button(text="Esporta DB", on_press=self.export_db))
-        self.add_widget(export_tab)
-        export_tab.text = "Esporta"
+        export_tab = BoxLayout(orientation='vertical', spacing=10, padding=10, size_hint_y=None)
+        export_tab.bind(minimum_height=export_tab.setter('height'))
+        scroll_export = ScrollView(size_hint=(1, 1))
+        scroll_export.add_widget(export_tab)
+        export_tab.add_widget(Button(text="Esporta DB", size_hint_y=None, height='40dp', on_press=self.export_db))
+        self.add_widget(scroll_export)
+        scroll_export.text = "Esporta"
 
-    # Popup e funzioni CRUD (riuso delle precedenti)
+    # Funzioni popup (riuso delle precedenti)
     def add_app_popup(self, instance):
-        layout = BoxLayout(orientation='vertical')
+        layout = BoxLayout(orientation='vertical', spacing=10, padding=10)
         nome_input = TextInput(hint_text="Nome App")
         descr_input = TextInput(hint_text="Descrizione")
         layout.add_widget(nome_input)
@@ -153,57 +168,19 @@ class MainTabbedPanel(TabbedPanel):
 
         btn_save.bind(on_press=save_app)
         layout.add_widget(btn_save)
-        popup = Popup(title="Aggiungi App", content=layout, size_hint=(0.8, 0.8))
-        popup.open()
-
-    # (Analoghi popup per Modifica, Elimina, Utenze, Relazioni, Mostra)
-    # Per brevità, si riutilizzano le funzioni già definite nel file precedente.
-
-    def edit_app_popup(self, instance):
-        layout = BoxLayout(orientation='vertical')
-        id_input = TextInput(hint_text="ID App")
-        nome_input = TextInput(hint_text="Nuovo Nome")
-        descr_input = TextInput(hint_text="Nuova Descrizione")
-        for w in [id_input, nome_input, descr_input]:
-            layout.add_widget(w)
-        btn_save = Button(text="Modifica")
-
-        def edit_app(btn):
-            self.db.modifica_app(int(id_input.text), nome_input.text, descr_input.text)
-            popup.dismiss()
-
-        btn_save.bind(on_press=edit_app)
-        layout.add_widget(btn_save)
-        popup = Popup(title="Modifica App", content=layout, size_hint=(0.8, 0.8))
-        popup.open()
-
-    # (Analoghi popup per delete_app_popup, add_utenza_popup, edit_utenza_popup, delete_utenza_popup, link_relation_popup, show_apps_for_utenza, show_utenze_for_app, show_apps, show_utenze, export_db)
-
-    def delete_app_popup(self, instance):
-        layout = BoxLayout(orientation='vertical')
-        id_input = TextInput(hint_text="ID App da eliminare")
-        layout.add_widget(id_input)
-        btn_delete = Button(text="Elimina")
-
-        def delete_app(btn):
-            self.db.elimina_app(int(id_input.text))
-            popup.dismiss()
-
-        btn_delete.bind(on_press=delete_app)
-        layout.add_widget(btn_delete)
-        popup = Popup(title="Elimina App", content=layout, size_hint=(0.8, 0.8))
+        popup = Popup(title="Aggiungi App", content=layout, size_hint=(0.9, 0.9))
         popup.open()
 
     def show_apps(self, instance):
         apps = self.db.lista_app()
         content = "".join([f"{a[0]} - {a[1]}" for a in apps])
-        popup = Popup(title="Lista App", content=Label(text=content or "Nessuna App"), size_hint=(0.8, 0.8))
+        popup = Popup(title="Lista App", content=Label(text=content or "Nessuna App"), size_hint=(0.9, 0.9))
         popup.open()
 
     def export_db(self, instance):
         export_path = os.path.join(os.getcwd(), "exported_data.db")
         shutil.copy(DB_FILE, export_path)
-        popup = Popup(title="Esportazione", content=Label(text=f"DB esportato in {export_path}"), size_hint=(0.8, 0.8))
+        popup = Popup(title="Esportazione", content=Label(text=f"DB esportato in {export_path}"), size_hint=(0.9, 0.9))
         popup.open()
 
 class MyApp(App):
