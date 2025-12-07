@@ -13,11 +13,6 @@ def init_db():
     - app_accounts: tabella di collegamento per la relazione molti-a-molti tra app e account.
     """
     try:
-        # Rimuove il file del database precedente, se esiste, per una reinizializzazione pulita.
-        if os.path.exists(DB_FILE):
-            os.remove(DB_FILE)
-            print(f"Database precedente '{DB_FILE}' rimosso.")
-
         # Si connette al database (lo crea se non esiste)
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
@@ -31,6 +26,18 @@ def init_db():
         );
         """)
 
+        # Aggiungi colonne 'order' e 'is_hidden' alla tabella 'accounts' se non esistono
+        try:
+            cursor.execute("ALTER TABLE accounts ADD COLUMN 'order' INTEGER DEFAULT 0;")
+            print("Colonna 'order' aggiunta alla tabella 'accounts'.")
+        except sqlite3.OperationalError:
+            pass # Colonna già esistente
+        try:
+            cursor.execute("ALTER TABLE accounts ADD COLUMN is_hidden INTEGER DEFAULT 0;")
+            print("Colonna 'is_hidden' aggiunta alla tabella 'accounts'.")
+        except sqlite3.OperationalError:
+            pass # Colonna già esistente
+
         # Creazione tabella 'apps'
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS apps (
@@ -39,6 +46,18 @@ def init_db():
             folder TEXT NOT NULL
         );
         """)
+
+        # Aggiungi colonne 'order' e 'is_hidden' alla tabella 'apps' se non esistono
+        try:
+            cursor.execute("ALTER TABLE apps ADD COLUMN 'order' INTEGER DEFAULT 0;")
+            print("Colonna 'order' aggiunta alla tabella 'apps'.")
+        except sqlite3.OperationalError:
+            pass # Colonna già esistente
+        try:
+            cursor.execute("ALTER TABLE apps ADD COLUMN is_hidden INTEGER DEFAULT 0;")
+            print("Colonna 'is_hidden' aggiunta alla tabella 'apps'.")
+        except sqlite3.OperationalError:
+            pass # Colonna già esistente
 
         # Creazione tabella di collegamento 'app_accounts'
         cursor.execute("""

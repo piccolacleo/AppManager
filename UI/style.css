@@ -168,8 +168,110 @@ button.remove-button:hover {
     box-sizing: border-box; /* Assicura che padding non alteri la larghezza totale */
 }
 
+/* Stili per la pagina di Gestione */
+#manage-accounts, #manage-apps {
+    background-color: var(--container-bg-color);
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    padding: 1.25rem;
+}
+
+.management-form {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.management-form h3, .management-list h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+.management-form form {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.management-form input[type="text"] {
+    flex-grow: 1;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.management-form button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+}
+
+.management-form button:hover {
+    background-color: var(--primary-color-hover);
+}
+
+.management-list table {
+    margin-top: 1rem;
+}
+
+/* Stili per la navigazione nell'header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header nav a {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+header nav a:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Stili per Order e Hidden nella pagina di Gestione */
+.management-list td form {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Centra orizzontalmente */
+    height: 100%; /* Assicura che il form occupi l'intera altezza della cella */
+}
+
+.order-input {
+    width: 50px;
+    padding: 0.3rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    text-align: center;
+}
+
+.management-list td input[type="checkbox"] {
+    transform: scale(1.2); /* Rende la checkbox leggermente più grande */
+}
+
+
 /* Responsive Design */
 @media (max-width: 768px) {
+    header {
+        flex-direction: column;
+    }
+
+    header h1 {
+        margin-bottom: 0.5rem;
+    }
+
     table, thead, tbody, th, td, tr {
         display: block;
     }

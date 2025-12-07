@@ -37,6 +37,8 @@
                         <tr>
                             <th>Nome</th>
                             <th>Abbreviazione</th>
+                            <th>Ordine</th>
+                            <th>Nascosto</th>
                             <th>Azione</th>
                         </tr>
                     </thead>
@@ -45,6 +47,18 @@
                         <tr>
                             <td data-label="Nome">{{ account.name }}</td>
                             <td data-label="Abbreviazione">{{ account.abbreviation or '' }}</td>
+                            <td data-label="Ordine">
+                                <form action="{{ url_for('update_account_settings') }}" method="POST" onchange="this.submit()">
+                                    <input type="hidden" name="id" value="{{ account.id }}">
+                                    <input type="number" name="order" value="{{ account.order }}" class="order-input">
+                                </form>
+                            </td>
+                            <td data-label="Nascosto">
+                                <form action="{{ url_for('update_account_settings') }}" method="POST" onchange="this.submit()">
+                                    <input type="hidden" name="id" value="{{ account.id }}">
+                                    <input type="checkbox" name="is_hidden" {% if account.is_hidden %}checked{% endif %}>
+                                </form>
+                            </td>
                             <td data-label="Azione">
                                 <form action="{{ url_for('delete_account', account_id=account.id) }}" method="POST" onsubmit="return confirm('Sei sicuro di voler eliminare questo account? Verrà rimosso da tutte le app associate.');">
                                     <button type="submit" class="remove-button">Elimina</button>
@@ -57,10 +71,60 @@
             </div>
         </section>
 
-        <!-- Sezione Gestione App (verrà implementata in seguito) -->
+        <!-- Sezione Gestione App -->
         <section id="manage-apps">
             <h2>Gestione Applicazioni</h2>
-            <p><i>(Funzionalità in arrivo)</i></p>
+            
+            <!-- Form per aggiungere una nuova app -->
+            <div class="management-form">
+                <h3>Aggiungi Nuova Applicazione</h3>
+                <form action="{{ url_for('add_new_app') }}" method="POST">
+                    <input type="text" name="name" placeholder="Nome applicazione" required>
+                    <input type="text" name="folder" placeholder="Cartella" required>
+                    <button type="submit">Aggiungi App</button>
+                </form>
+            </div>
+
+            <!-- Lista delle app esistenti -->
+            <div class="management-list">
+                <h3>Applicazioni Esistenti</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Cartella</th>
+                            <th>Ordine</th>
+                            <th>Nascosta</th>
+                            <th>Azione</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in all_apps %}
+                        <tr>
+                            <td data-label="Nome">{{ app.name }}</td>
+                            <td data-label="Cartella">{{ app.folder }}</td>
+                            <td data-label="Ordine">
+                                <form action="{{ url_for('update_app_settings') }}" method="POST" onchange="this.submit()">
+                                    <input type="hidden" name="id" value="{{ app.id }}">
+                                    <input type="number" name="order" value="{{ app.order }}" class="order-input">
+                                </form>
+                            </td>
+                            <td data-label="Nascosta">
+                                <form action="{{ url_for('update_app_settings') }}" method="POST" onchange="this.submit()">
+                                    <input type="hidden" name="id" value="{{ app.id }}">
+                                    <input type="checkbox" name="is_hidden" {% if app.is_hidden %}checked{% endif %}>
+                                </form>
+                            </td>
+                            <td data-label="Azione">
+                                <form action="{{ url_for('delete_app', app_id=app.id) }}" method="POST" onsubmit="return confirm('Sei sicuro di voler eliminare questa applicazione? Verranno rimosse tutte le associazioni con gli account.');">
+                                    <button type="submit" class="remove-button">Elimina</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </section>
     </main>
 
