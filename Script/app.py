@@ -1,11 +1,13 @@
 import sqlite3
 import os
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, request, jsonify # Removed render_template, redirect, url_for, session, flash
+from flask_cors import CORS # New import for CORS
 from werkzeug.security import generate_password_hash, check_password_hash
-from functools import wraps
+# from functools import wraps # Removed as login_required is removed temporarily
 
-# Creazione dell'applicazione Flask con percorsi personalizzati per UI
-app = Flask(__name__, template_folder='../UI', static_folder='../UI')
+# Creazione dell'applicazione Flask
+app = Flask(__name__) # Removed template_folder and static_folder as we are creating an API
+CORS(app) # Enable CORS for all routes
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(24)) # Usa una chiave sicura per le sessioni
 
 # Definisce il percorso del database nella cartella Dati
@@ -21,7 +23,7 @@ def get_db_connection():
 def get_user_by_id(user_id):
     """Recupera un utente dal database tramite ID."""
     conn = get_db_connection()
-    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    user = conn.execute('SELECT id, username, is_admin FROM users WHERE id = ?', (user_id,)).fetchone() # Do not return password_hash
     conn.close()
     return user
 
@@ -32,29 +34,21 @@ def get_user_by_username(username):
     conn.close()
     return user
 
-def login_required(f):
-    """Decoratore per proteggere le rotte che richiedono l'autenticazione."""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            flash('Accedi per accedere a questa pagina.', 'warning')
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
+# login_required decorator is removed temporarily as we are moving to token-based auth
 
 def get_all_accounts():
     """Recupera tutti gli account dal database, inclusi order e is_hidden, ordinati per order e nome."""
     conn = get_db_connection()
     accounts = conn.execute('SELECT id, name, abbreviation, "order", is_hidden FROM accounts ORDER BY "order", name').fetchall()
     conn.close()
-    return accounts
+    return [dict(acc) for acc in accounts]
 
 def get_all_apps():
     """Recupera tutte le app dal database, inclusi order e is_hidden, ordinati per order e nome."""
     conn = get_db_connection()
     apps = conn.execute('SELECT id, name, folder, "order", is_hidden FROM apps ORDER BY "order", name').fetchall()
     conn.close()
-    return apps
+    return [dict(app) for app in apps]
 
 def get_data_grouped_by_folder():
     """
@@ -119,9 +113,7 @@ def get_data_grouped_by_folder():
 
     final_structure = {}
     for folder, apps in folders_dict.items():
-        # Ordina le app all'interno della cartella prima di convertirle in lista
         sorted_apps = sorted(apps.values(), key=lambda x: (x['order'], x['name']))
-        # Ordina gli account all'interno di ciascuna app
         for app_data in sorted_apps:
             if 'accounts' in app_data and app_data['accounts']:
                 app_data['accounts'] = sorted(app_data['accounts'], key=lambda x: (x['order'], x['name']))
@@ -130,97 +122,113 @@ def get_data_grouped_by_folder():
     return final_structure
 
 
-@app.route('/')
-def index():
+@app.route('/api/apps') # Changed route
+def get_apps_data(): # Changed function name
     """
-    Pagina principale che visualizza l'elenco di tutte le app, raggruppate per cartella.
+    API endpoint che restituisce l'elenco di tutte le app, raggruppate per cartella, come JSON.
     """
     apps_by_folder = get_data_grouped_by_folder()
-    all_accounts = get_all_accounts() # Usato per la dropdown in index.html, non dovrebbe filtrare gli hidden
-    logged_in_user = get_user_by_id(session.get('user_id')) if 'user_id' in session else None
-    return render_template('index.html', apps_by_folder=apps_by_folder, all_accounts=all_accounts, logged_in_user=logged_in_user)
+    return jsonify(apps_by_folder) # Return JSON
 
-@app.route('/manage')
-@login_required
-def manage():
+@app.route('/api/manage/data') # Changed route
+# @login_required # Temporarily removed
+def get_manage_data(): # Changed function name
     """
-    Pagina per la gestione di app e account. Richiede autenticazione.
+    API endpoint che restituisce tutti gli account e le app per la pagina di gestione, come JSON.
     """
     all_accounts = get_all_accounts()
     all_apps = get_all_apps()
-    logged_in_user = get_user_by_id(session['user_id'])
-    return render_template('manage.html', all_accounts=all_accounts, all_apps=all_apps, logged_in_user=logged_in_user)
+    # logged_in_user = get_user_by_id(session['user_id']) # Removed session usage
+    return jsonify({'accounts': all_accounts, 'apps': all_apps}) # Return JSON
 
-@app.route('/add_account', methods=['POST'])
-@login_required
-def add_account():
+@app.route('/api/accounts/add', methods=['POST']) # Changed route
+# @login_required # Temporarily removed
+def add_account_api(): # Changed function name
     """
-    Aggiunge un'associazione tra un'app e un account nel database. Richiede autenticazione.
+    API endpoint per aggiungere un'associazione tra un'app e un account.
     """
-    app_id = request.form.get('app_id')
-    account_id = request.form.get('account_id')
+    data = request.get_json()
+    app_id = data.get('app_id')
+    account_id = data.get('account_id')
 
-    if app_id and account_id:
-        conn = get_db_connection()
+    if not app_id or not account_id:
+        return jsonify({'message': 'Missing app_id or account_id'}, 400)
+
+    conn = get_db_connection()
+    try:
         conn.execute(
             'INSERT OR IGNORE INTO app_accounts (app_id, account_id) VALUES (?, ?)',
             (app_id, account_id)
         )
         conn.commit()
+        return jsonify({'message': 'Association added successfully'})
+    except sqlite3.Error as e:
+        conn.rollback()
+        return jsonify({'message': f'Error adding association: {e}'}, 500)
+    finally:
         conn.close()
 
-    return redirect(url_for('index'))
-
-@app.route('/remove_account', methods=['POST'])
-@login_required
-def remove_account():
+@app.route('/api/accounts/remove', methods=['POST']) # Changed route
+# @login_required # Temporarily removed
+def remove_account_api(): # Changed function name
     """
-    Rimuove un'associazione tra un'app e un account dal database. Richiede autenticazione.
+    API endpoint per rimuovere un'associazione tra un'app e un account.
     """
-    app_id = request.form.get('app_id')
-    account_id = request.form.get('account_id')
+    data = request.get_json()
+    app_id = data.get('app_id')
+    account_id = data.get('account_id')
 
-    if app_id and account_id:
-        conn = get_db_connection()
+    if not app_id or not account_id:
+        return jsonify({'message': 'Missing app_id or account_id'}, 400)
+
+    conn = get_db_connection()
+    try:
         conn.execute(
             'DELETE FROM app_accounts WHERE app_id = ? AND account_id = ?',
             (app_id, account_id)
         )
         conn.commit()
+        return jsonify({'message': 'Association removed successfully'})
+    except sqlite3.Error as e:
+        conn.rollback()
+        return jsonify({'message': f'Error removing association: {e}'}, 500)
+    finally:
         conn.close()
-    
-    return redirect(url_for('index'))
 
-@app.route('/add_new_account', methods=['POST'])
-@login_required
-def add_new_account():
+@app.route('/api/accounts', methods=['POST']) # Changed route
+# @login_required # Temporarily removed
+def add_new_account_api(): # Changed function name
     """
-    Aggiunge un nuovo account al database. Richiede autenticazione.
+    API endpoint per aggiungere un nuovo account.
     """
-    name = request.form.get('name')
-    abbreviation = request.form.get('abbreviation')
+    data = request.get_json()
+    name = data.get('name')
+    abbreviation = data.get('abbreviation')
 
-    if name:
-        conn = get_db_connection()
-        try:
-            conn.execute(
-                'INSERT INTO accounts (name, abbreviation) VALUES (?, ?)',
-                (name, abbreviation if abbreviation else None)
-            )
-            conn.commit()
-            flash('Un account con questo nome esiste già.', 'error')
-        except sqlite3.IntegrityError:
-            flash('Un account con questo nome esiste già.', 'error')
-        finally:
-            conn.close()
+    if not name:
+        return jsonify({'message': 'Missing account name'}, 400)
 
-    return redirect(url_for('manage'))
+    conn = get_db_connection()
+    try:
+        cursor = conn.execute(
+            'INSERT INTO accounts (name, abbreviation) VALUES (?, ?)',
+            (name, abbreviation)
+        )
+        conn.commit()
+        return jsonify({'message': 'Account added successfully', 'id': cursor.lastrowid})
+    except sqlite3.IntegrityError:
+        return jsonify({'message': 'An account with this name already exists'}, 409) # 409 Conflict
+    except sqlite3.Error as e:
+        conn.rollback()
+        return jsonify({'message': f'Error adding account: {e}'}, 500)
+    finally:
+        conn.close()
 
-@app.route('/delete_account/<int:account_id>', methods=['POST'])
-@login_required
-def delete_account(account_id):
+@app.route('/api/accounts/<int:account_id>', methods=['DELETE']) # Changed route
+# @login_required # Temporarily removed
+def delete_account_api(account_id): # Changed function name
     """
-    Elimina un account e tutte le sue associazioni. Richiede autenticazione.
+    API endpoint per eliminare un account e tutte le sue associazioni.
     """
     conn = get_db_connection()
     try:
@@ -228,74 +236,74 @@ def delete_account(account_id):
         cursor.execute('DELETE FROM app_accounts WHERE account_id = ?', (account_id,))
         cursor.execute('DELETE FROM accounts WHERE id = ?', (account_id,))
         conn.commit()
-        flash(f'Account ID {account_id} eliminato con successo.', 'success')
+        return jsonify({'message': f'Account ID {account_id} deleted successfully'})
     except sqlite3.Error as e:
-        print(f"Errore durante l'eliminazione dell'account: {e}")
         conn.rollback()
-        flash('Errore durante l\'eliminazione dell\'account.', 'error')
+        return jsonify({'message': f'Error deleting account: {e}'}, 500)
     finally:
         conn.close()
-    
-    return redirect(url_for('manage'))
 
-@app.route('/update_account_settings', methods=['POST'])
-@login_required
-def update_account_settings():
+@app.route('/api/accounts/<int:account_id>', methods=['PUT']) # Changed route
+# @login_required # Temporarily removed
+def update_account_settings_api(account_id): # Changed function name
     """
-    Aggiorna le impostazioni (ordine, visibilità) di un account. Richiede autenticazione.
+    API endpoint per aggiornare le impostazioni (ordine, visibilità) di un account.
     """
-    account_id = request.form.get('id', type=int)
-    order = request.form.get('order', type=int)
-    is_hidden = 1 if request.form.get('is_hidden') == 'on' else 0
+    data = request.get_json()
+    order = data.get('order', type=int)
+    is_hidden = 1 if data.get('is_hidden') else 0 # From boolean in JSON
 
-    if account_id is not None:
-        conn = get_db_connection()
-        try:
-            conn.execute(
-                'UPDATE accounts SET "order" = ?, is_hidden = ? WHERE id = ?',
-                (order, is_hidden, account_id)
-            )
-            conn.commit()
-            flash(f'Impostazioni account ID {account_id} aggiornate.', 'success')
-        except sqlite3.Error as e:
-            print(f"Errore durante l'aggiornamento dell'account: {e}")
-            conn.rollback()
-            flash('Errore durante l\'aggiornamento delle impostazioni account.', 'error')
-        finally:
-            conn.close()
+    if account_id is None:
+        return jsonify({'message': 'Missing account_id'}, 400)
+
+    conn = get_db_connection()
+    try:
+        conn.execute(
+            'UPDATE accounts SET "order" = ?, is_hidden = ? WHERE id = ?',
+            (order, is_hidden, account_id)
+        )
+        conn.commit()
+        return jsonify({'message': f'Account ID {account_id} settings updated successfully'})
+    except sqlite3.Error as e:
+        conn.rollback()
+        return jsonify({'message': f'Error updating account settings: {e}'}, 500)
+    finally:
+        conn.close()
             
-    return redirect(url_for('manage'))
-
-@app.route('/add_new_app', methods=['POST'])
-@login_required
-def add_new_app():
+@app.route('/api/apps', methods=['POST']) # Changed route
+# @login_required # Temporarily removed
+def add_new_app_api(): # Changed function name
     """
-    Aggiunge una nuova applicazione al database. Richiede autenticazione.
+    API endpoint per aggiungere una nuova applicazione.
     """
-    name = request.form.get('name')
-    folder = request.form.get('folder')
+    data = request.get_json()
+    name = data.get('name')
+    folder = data.get('folder')
 
-    if name and folder:
-        conn = get_db_connection()
-        try:
-            conn.execute(
-                'INSERT INTO apps (name, folder) VALUES (?, ?)',
-                (name, folder)
-            )
-            conn.commit()
-            flash(f'Applicazione {name} aggiunta con successo.', 'success')
-        except sqlite3.IntegrityError:
-            flash('Un\'applicazione con questo nome esiste già.', 'error')
-        finally:
-            conn.close()
+    if not name or not folder:
+        return jsonify({'message': 'Missing app name or folder'}, 400)
 
-    return redirect(url_for('manage'))
+    conn = get_db_connection()
+    try:
+        cursor = conn.execute(
+            'INSERT INTO apps (name, folder) VALUES (?, ?)',
+            (name, folder)
+        )
+        conn.commit()
+        return jsonify({'message': 'App added successfully', 'id': cursor.lastrowid})
+    except sqlite3.IntegrityError:
+        return jsonify({'message': 'An app with this name already exists'}, 409) # 409 Conflict
+    except sqlite3.Error as e:
+        conn.rollback()
+        return jsonify({'message': f'Error adding app: {e}'}, 500)
+    finally:
+        conn.close()
 
-@app.route('/delete_app/<int:app_id>', methods=['POST'])
-@login_required
-def delete_app(app_id):
+@app.route('/api/apps/<int:app_id>', methods=['DELETE']) # Changed route
+# @login_required # Temporarily removed
+def delete_app_api(app_id): # Changed function name
     """
-    Elimina un'applicazione e tutte le sue associazioni. Richiede autenticazione.
+    API endpoint per eliminare un'applicazione e tutte le sue associazioni.
     """
     conn = get_db_connection()
     try:
@@ -303,77 +311,69 @@ def delete_app(app_id):
         cursor.execute('DELETE FROM app_accounts WHERE app_id = ?', (app_id,))
         cursor.execute('DELETE FROM apps WHERE id = ?', (app_id,))
         conn.commit()
-        flash(f'Applicazione ID {app_id} eliminata con successo.', 'success')
+        return jsonify({'message': f'App ID {app_id} deleted successfully'})
     except sqlite3.Error as e:
-        print(f"Errore durante l'eliminazione dell'app: {e}")
         conn.rollback()
-        flash('Errore durante l\'eliminazione dell\'applicazione.', 'error')
+        return jsonify({'message': f'Error deleting app: {e}'}, 500)
     finally:
         conn.close()
-    
-    return redirect(url_for('manage'))
 
-@app.route('/update_app_settings', methods=['POST'])
-@login_required
-def update_app_settings():
+@app.route('/api/apps/<int:app_id>', methods=['PUT']) # Changed route
+# @login_required # Temporarily removed
+def update_app_settings_api(app_id): # Changed function name
     """
-    Aggiorna le impostazioni (ordine, visibilità) di un'applicazione. Richiede autenticazione.
+    API endpoint per aggiornare le impostazioni (ordine, visibilità) di un'applicazione.
     """
-    app_id = request.form.get('id', type=int)
-    order = request.form.get('order', type=int)
-    is_hidden = 1 if request.form.get('is_hidden') == 'on' else 0
+    data = request.get_json()
+    order = data.get('order', type=int)
+    is_hidden = 1 if data.get('is_hidden') else 0
 
-    if app_id is not None:
-        conn = get_db_connection()
-        try:
-            conn.execute(
-                'UPDATE apps SET "order" = ?, is_hidden = ? WHERE id = ?',
-                (order, is_hidden, app_id)
-            )
-            conn.commit()
-            flash(f'Impostazioni applicazione ID {app_id} aggiornate.', 'success')
-        except sqlite3.Error as e:
-            print(f"Errore durante l'aggiornamento dell'app: {e}")
-            conn.rollback()
-            flash('Errore durante l\'aggiornamento delle impostazioni applicazione.', 'error')
-        finally:
-            conn.close()
-            
-    return redirect(url_for('manage'))
+    if app_id is None:
+        return jsonify({'message': 'Missing app_id'}, 400)
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    """
-    Gestisce il login utente.
-    """
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        user = get_user_by_username(username)
+    conn = get_db_connection()
+    try:
+        conn.execute(
+            'UPDATE apps SET "order" = ?, is_hidden = ? WHERE id = ?',
+            (order, is_hidden, app_id)
+        )
+        conn.commit()
+        return jsonify({'message': f'App ID {app_id} settings updated successfully'})
+    except sqlite3.Error as e:
+        conn.rollback()
+        return jsonify({'message': f'Error updating app settings: {e}'}, 500)
+    finally:
+        conn.close()
 
-        if user and check_password_hash(user['password_hash'], password):
-            session['user_id'] = user['id']
-            flash('Accesso effettuato con successo!', 'success')
-            return redirect(url_for('manage')) # Reindirizza alla pagina di gestione dopo il login
-        else:
-            flash('Credenziali non valide. Riprova.', 'error')
-    
-    return render_template('login.html')
+@app.route('/api/login', methods=['POST']) # Changed route
+def login_api(): # Changed function name
+    """
+    API endpoint per gestire il login utente.
+    """
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    user = get_user_by_username(username)
 
-@app.route('/logout')
-def logout():
+    if user and check_password_hash(user['password_hash'], password):
+        # For now, return a placeholder token. JWT implementation will replace this.
+        # This will be replaced by a proper JWT token later
+        placeholder_token = "your_placeholder_jwt_token_here" 
+        return jsonify({'message': 'Login successful', 'token': placeholder_token, 'user_id': user['id'], 'username': user['username']})
+    else:
+        return jsonify({'message': 'Invalid credentials'}, 401)
+
+@app.route('/api/logout', methods=['POST']) # Changed route
+# @login_required # Temporarily removed
+def logout_api(): # Changed function name
     """
-    Gestisce il logout utente.
+    API endpoint per gestire il logout utente.
     """
-    session.pop('user_id', None)
-    flash('Logout effettuato con successo.', 'success')
-    return redirect(url_for('login'))
+    # For token-based auth, logout is often handled client-side by deleting the token.
+    # This endpoint can be used for server-side token invalidation or just a confirmation.
+    # session.pop('user_id', None) # Session-based logout is removed
+    return jsonify({'message': 'Logout successful'})
 
 if __name__ == '__main__':
-    # Usa FLASK_DEBUG per controllare la modalità debug
     debug_mode = os.environ.get('FLASK_DEBUG') == '1'
     app.run(debug=debug_mode)
-
-
-    
-    
