@@ -11,11 +11,27 @@
     <header>
         <h1>Gestione Account App</h1>
         <nav>
-            <a href="{{ url_for('manage') }}">Gestione Dati &rarr;</a>
+            {% if logged_in_user %}
+                <span>Benvenuto, {{ logged_in_user.username }}!</span>
+                <a href="{{ url_for('manage') }}">Gestione Dati &rarr;</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Login</a>
+            {% endif %}
         </nav>
     </header>
 
     <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flashes">
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
         <div class="search-container">
             <input type="text" id="search-bar" placeholder="Cerca applicazione...">
         </div>
@@ -42,11 +58,13 @@
                                         {% for account in app.accounts %}
                                             <li>
                                                 <span>{{ account.name }}</span>
+                                                {% if logged_in_user %}
                                                 <form action="{{ url_for('remove_account') }}" method="POST" class="remove-form">
                                                     <input type="hidden" name="app_id" value="{{ app.id }}">
                                                     <input type="hidden" name="account_id" value="{{ account.id }}">
                                                     <button type="submit" class="remove-button">Rimuovi</button>
                                                 </form>
+                                                {% endif %}
                                             </li>
                                         {% endfor %}
                                     </ul>
@@ -55,6 +73,7 @@
                                 {% endif %}
 
                                 {# Form per aggiungere un nuovo account #}
+                                {% if logged_in_user %}
                                 <div class="add-account-form">
                                     <form action="{{ url_for('add_account') }}" method="POST">
                                         <input type="hidden" name="app_id" value="{{ app.id }}">
@@ -68,6 +87,7 @@
                                         <button type="submit">Aggiungi</button>
                                     </form>
                                 </div>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}

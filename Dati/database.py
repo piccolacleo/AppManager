@@ -70,6 +70,16 @@ def init_db():
         );
         """)
 
+        # Creazione tabella 'users' per l'autenticazione locale
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            is_admin INTEGER DEFAULT 0
+        );
+        """)
+
         conn.commit()
         print(f"Database '{DB_FILE}' creato e tabelle inizializzate con successo.")
 

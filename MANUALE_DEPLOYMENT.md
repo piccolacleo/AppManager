@@ -45,9 +45,14 @@ Se non ne hai già uno, crea un account gratuito su [GitHub](https://github.com/
     *   **Branch:** Lascia `main` (o il nome del tuo branch principale).
     *   **Root Directory:** Lascia vuoto.
     *   **Runtime:** Seleziona `Python 3`.
-    *   **Build Command:** In questo campo, copia e incolla la riga seguente. Questo comando installerà le librerie necessarie e creerà il database la prima volta.
+    *   **Environment Variables:** Vai su "Advanced" -> "Add Environment Variable". Aggiungi una variabile con:
+        *   **Key:** `FLASK_SECRET_KEY`
+        *   **Value:** `la_tua_chiave_segreta_lunga_e_complessa` (Genera una stringa casuale molto lunga e complessa. Puoi usare siti come `passwordsgenerator.net` o un generatore di chiavi Python per questo. Questa chiave è cruciale per la sicurezza delle sessioni!)
+        *   **Key:** `FLASK_DEBUG`
+        *   **Value:** `0` (Imposta a `0` per disabilitare la modalità debug in produzione).
+    *   **Build Command:** In questo campo, copia e incolla la riga seguente. Questo comando installerà le librerie necessarie, creerà lo schema del database (incluse le tabelle `users`), e popolerà il database con i dati iniziali.
         ```bash
-        pip install -r requirements.txt && python Dati/import_data.py
+        pip install -r requirements.txt && python Dati/database.py && python Dati/import_data.py
         ```
     *   **Start Command:** In questo campo, copia e incolla la riga seguente. Questo comando avvia l'applicazione web.
         ```bash
@@ -64,7 +69,7 @@ Se non ne hai già uno, crea un account gratuito su [GitHub](https://github.com/
 
 Render inizierà ora il processo di "deployment":
 - Installerà le dipendenze (`pip install...`).
-- Eseguirà il build command (creando il database con `import_data.py`).
+- Eseguirà il build command (creando il database, lo schema `users` e i dati con `import_data.py`).
 - Avvierà il server (`gunicorn...`).
 
 Puoi seguire l'avanzamento nella sezione "Logs" o "Events". La prima volta potrebbe richiedere alcuni minuti.
@@ -72,7 +77,23 @@ Puoi seguire l'avanzamento nella sezione "Logs" o "Events". La prima volta potre
 Quando vedi il messaggio **"Your service is live"**, significa che ha finito!
 In cima alla pagina, troverai l'URL pubblico della tua applicazione (es. `https://gestione-app-personale.onrender.com`).
 
-**Cliccaci sopra e la tua applicazione sarà online, accessibile da qualsiasi PC o cellulare!**
+**Cliccaci sopra e la tua applicazione sarà online!**
+
+---
+
+### Passo 4: Configurazione Utente Amministratore (Post-Deployment)
+
+Dopo il primo deployment di successo, dovrai creare l'utente amministratore `piccolacleo`. Poiché la creazione di questo utente richiede l'inserimento di una password, non può essere automatizzata nel processo di build.
+
+1.  **Connettiti via SSH a Render:** Nella dashboard del tuo servizio Render, cerca il pulsante "Shell" o "SSH" per aprire una console di comando direttamente sul tuo server.
+2.  **Esegui lo script di setup:** Nella console SSH, naviga nella directory principale del tuo progetto (dovrebbe essere quella di default) e esegui:
+    ```bash
+    python setup_admin.py
+    ```
+3.  **Segui le istruzioni:** Lo script ti chiederà di inserire e confermare una password per l'utente `piccolacleo`.
+4.  **Riavvia il Servizio:** Dopo aver creato l'utente, potrebbe essere necessario riavviare il servizio Render dalla dashboard per assicurarti che tutte le modifiche siano caricate correttamente.
+
+Ora potrai accedere all'applicazione online usando `piccolacleo` e la password che hai impostato!
 
 ---
 
