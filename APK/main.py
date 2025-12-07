@@ -84,6 +84,19 @@ class DBManager:
         self.cursor.execute("SELECT * FROM utenze ORDER BY ordine")
         return self.cursor.fetchall()
 
+    # Relazioni App-Utenze
+    def collega_app_utenza(self, id_app, id_utenza):
+        self.cursor.execute("INSERT OR IGNORE INTO app_utenze (id_app, id_utenza) VALUES (?, ?)", (id_app, id_utenza))
+        self.conn.commit()
+
+    def lista_app_per_utenza(self, id_utenza):
+        self.cursor.execute("SELECT app.id, app.nome FROM app JOIN app_utenze ON app.id = app_utenze.id_app WHERE app_utenze.id_utenza=?", (id_utenza,))
+        return self.cursor.fetchall()
+
+    def lista_utenze_per_app(self, id_app):
+        self.cursor.execute("SELECT utenze.id, utenze.indirizzo FROM utenze JOIN app_utenze ON utenze.id = app_utenze.id_utenza WHERE app_utenze.id_app=?", (id_app,))
+        return self.cursor.fetchall()
+
     def close(self):
         self.conn.close()
 
@@ -95,43 +108,24 @@ class MainLayout(BoxLayout):
         self.add_widget(Label(text="Gestione App e Utenze"))
 
         # Pulsanti App
-        btn_add_app = Button(text="Aggiungi App")
-        btn_add_app.bind(on_press=self.add_app_popup)
-        self.add_widget(btn_add_app)
-
-        btn_edit_app = Button(text="Modifica App")
-        btn_edit_app.bind(on_press=self.edit_app_popup)
-        self.add_widget(btn_edit_app)
-
-        btn_delete_app = Button(text="Elimina App")
-        btn_delete_app.bind(on_press=self.delete_app_popup)
-        self.add_widget(btn_delete_app)
-
-        btn_list_app = Button(text="Lista App")
-        btn_list_app.bind(on_press=self.show_apps)
-        self.add_widget(btn_list_app)
+        self.add_widget(Button(text="Aggiungi App", on_press=self.add_app_popup))
+        self.add_widget(Button(text="Modifica App", on_press=self.edit_app_popup))
+        self.add_widget(Button(text="Elimina App", on_press=self.delete_app_popup))
+        self.add_widget(Button(text="Lista App", on_press=self.show_apps))
 
         # Pulsanti Utenze
-        btn_add_utenza = Button(text="Aggiungi Utenza")
-        btn_add_utenza.bind(on_press=self.add_utenza_popup)
-        self.add_widget(btn_add_utenza)
+        self.add_widget(Button(text="Aggiungi Utenza", on_press=self.add_utenza_popup))
+        self.add_widget(Button(text="Modifica Utenza", on_press=self.edit_utenza_popup))
+        self.add_widget(Button(text="Elimina Utenza", on_press=self.delete_utenza_popup))
+        self.add_widget(Button(text="Lista Utenze", on_press=self.show_utenze))
 
-        btn_edit_utenza = Button(text="Modifica Utenza")
-        btn_edit_utenza.bind(on_press=self.edit_utenza_popup)
-        self.add_widget(btn_edit_utenza)
-
-        btn_delete_utenza = Button(text="Elimina Utenza")
-        btn_delete_utenza.bind(on_press=self.delete_utenza_popup)
-        self.add_widget(btn_delete_utenza)
-
-        btn_list_utenze = Button(text="Lista Utenze")
-        btn_list_utenze.bind(on_press=self.show_utenze)
-        self.add_widget(btn_list_utenze)
+        # Pulsanti Relazioni
+        self.add_widget(Button(text="Collega App-Utenza", on_press=self.link_relation_popup))
+        self.add_widget(Button(text="Mostra App per Utenza", on_press=self.show_apps_for_utenza))
+        self.add_widget(Button(text="Mostra Utenze per App", on_press=self.show_utenze_for_app))
 
         # Pulsante esportazione DB
-        btn_export = Button(text="Esporta DB")
-        btn_export.bind(on_press=self.export_db)
-        self.add_widget(btn_export)
+        self.add_widget(Button(text="Esporta DB", on_press=self.export_db))
 
     # Popup per aggiungere App
     def add_app_popup(self, instance):
@@ -243,6 +237,62 @@ class MainLayout(BoxLayout):
         btn_delete.bind(on_press=delete_utenza)
         layout.add_widget(btn_delete)
         popup = Popup(title="Elimina Utenza", content=layout, size_hint=(0.8, 0.8))
+        popup.open()
+
+    # Popup per collegare App-Utenza
+    def link_relation_popup(self, instance):
+        layout = BoxLayout(orientation='vertical')
+        id_app_input = TextInput(hint_text="ID App")
+        id_utenza_input = TextInput(hint_text="ID Utenza")
+        layout.add_widget(id_app_input)
+        layout.add_widget(id_utenza_input)
+        btn_link = Button(text="Collega")
+
+        def link_relation(btn):
+            self.db.collega_app_utenza(int(id_app_input.text), int(id_utenza_input.text))
+            popup.dismiss()
+
+        btn_link.bind(on_press=link_relation)
+        layout.add_widget(btn_link)
+        popup = Popup(title="Collega App-Utenza", content=layout, size_hint=(0.8, 0.8))
+        popup.open()
+
+    # Mostra App per Utenza
+    def show_apps_for_utenza(self, instance):
+        layout = BoxLayout(orientation='vertical')
+        id_input = TextInput(hint_text="ID Utenza")
+        layout.add_widget(id_input)
+        btn_show = Button(text="Mostra")
+
+        def show(btn):
+            apps = self.db.lista_app_per_utenza(int(id_input.text))
+            content = "".join([f"{a[0]} - {a[1]}" for a in apps])
+            result_popup = Popup(title="App per Utenza", content=Label(text=content or "Nessuna App"), size_hint=(0.8, 0.8))
+            result_popup.open()
+            popup.dismiss()
+
+        btn_show.bind(on_press=show)
+        layout.add_widget(btn_show)
+        popup = Popup(title="Mostra App per Utenza", content=layout, size_hint=(0.8, 0.8))
+        popup.open()
+
+    # Mostra Utenze per App
+    def show_utenze_for_app(self, instance):
+        layout = BoxLayout(orientation='vertical')
+        id_input = TextInput(hint_text="ID App")
+        layout.add_widget(id_input)
+        btn_show = Button(text="Mostra")
+
+        def show(btn):
+            utenze = self.db.lista_utenze_per_app(int(id_input.text))
+            content = "".join([f"{u[0]} - {u[1]}" for u in utenze])
+            result_popup = Popup(title="Utenze per App", content=Label(text=content or "Nessuna Utenza"), size_hint=(0.8, 0.8))
+            result_popup.open()
+            popup.dismiss()
+
+        btn_show.bind(on_press=show)
+        layout.add_widget(btn_show)
+        popup = Popup(title="Mostra Utenze per App", content=layout, size_hint=(0.8, 0.8))
         popup.open()
 
     def show_apps(self, instance):
